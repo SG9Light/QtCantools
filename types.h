@@ -118,7 +118,7 @@ typedef enum
 typedef enum
 {
     //初始无效状态
-    STATUS_FLASH_UPDATE_INVALID=0,
+    STATUS_FLASH_UPDATE_INVALID = 0,
     //开始选择节点升级
     STATUS_FLASH_START,
     //对指定节点开始升级过程

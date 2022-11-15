@@ -114,6 +114,7 @@ FlashUpData::FlashUpData(QObject *parent) : QObject(parent)
 ***********************************************************************************/
 int FlashUpData::HandCommXmitFcb()
 {
+    m_pHostModuleItc->u16FlashupdateStatus = STATUS_PROGRAM_ENABLE;
     return  0;
 
 }
@@ -506,8 +507,8 @@ void FlashUpData::ReadASectionAsciiHex(BYTE *buf, DWORD &pos, WORD &nLength, UIN
 参数：
 ***********************************************************************************/
 void FlashUpData::parseFlashAddress(WORD & wSectionLen, UINT & uSectionAddress, BYTE* ucSectionBuff,
-                                                 UINT16 & u16FlagValue, bool bFlashKernel,
-                                                 bool &bSectSendCplt, BYTE * &pSaveData, UINT16 &SaveLen)
+                                    UINT16 & u16FlagValue, bool bFlashKernel,
+                                    bool &bSectSendCplt, BYTE * &pSaveData, UINT16 &SaveLen)
 {
     //不更新kernel
     if (!bFlashKernel)
@@ -576,9 +577,9 @@ void FlashUpData::parseFlashAddress(WORD & wSectionLen, UINT & uSectionAddress, 
 void FlashUpData::FlashUpdateRoutine(void)
 {
     CAN_XMIT_QUEUE_MSG_T TempMsg;
-    UCHAR ucStateFlag = 0;
+    unsigned char ucStateFlag = 0;
 
-    switch(10)
+    switch(m_pHostModuleItc->u16FlashupdateStatus)
     {
     //开始升级
     case STATUS_FLASH_START:
@@ -610,6 +611,7 @@ void FlashUpData::FlashUpdateRoutine(void)
         break;
         //等待芯片解密信号
     case STATUS_WAITING_CHIP_DECODE:
+        qDebug()<<"等待芯片解密信号";
         //do nothing
         break;
         //等待API版本确认信息
@@ -626,6 +628,7 @@ void FlashUpData::FlashUpdateRoutine(void)
         TempMsg.ucRsRq = RS_MSG;
         TempMsg.ucSourceId = MAC_ID_MON;
         AppMsgXmit(&TempMsg);
+        qDebug()<<"下发擦除命令";
 
         break;
         //等待擦除命令应答
@@ -650,6 +653,7 @@ void FlashUpData::FlashUpdateRoutine(void)
         //编程允许
     case STATUS_PROGRAM_ENABLE:
     {
+        qDebug()<<"编程开始case";
         //首先读一个Section相关信息，从总的缓冲区中指定位置开始读出一个BLOCK的信息，首先读一个Section相关信息
 L1:     //上次有数据未处理完，则优先处理
         if (!m_bSectSendCplt)
@@ -663,12 +667,17 @@ L1:     //上次有数据未处理完，则优先处理
         else if (!m_bReadEnd)
         {
             ReadASectionAsciiHex(cFlashUpdateBuf, m_ulPos, m_wSectionLen, m_uSectionAddress, m_ucSectionBuff);
+            qDebug() << "待传输的数据在BLOCK中的地址" << m_ulPos ;
+            qDebug() << "对应扇区长度为" << m_wSectionLen ;
+            for (int i = 0; i < 20 ; i++) {
+                qDebug() << "buff数据为：" << cFlashUpdateBuf[i];
+            }
+
             if (m_wSectionLen > 0)
             {
-//                bool bFlashKernel = (m_pHostModuleItc->u16FlashUpdateKernelFlag == 0x95);
-
-//                parseFlashAddress(m_wSectionLen,m_uSectionAddress,m_ucSectionBuff,m_u16FlagValue,
-//                                  bFlashKernel,m_bSectSendCplt,m_pSaveData,m_SaveLen);
+                bool bFlashKernel = (m_pHostModuleItc->u16FlashUpdateKernelFlag == 0x95);
+                parseFlashAddress(m_wSectionLen,m_uSectionAddress,m_ucSectionBuff,m_u16FlagValue,
+                                  bFlashKernel,m_bSectSendCplt,m_pSaveData,m_SaveLen);
                 if (m_wSectionLen==0)
                     goto L1;
             }
@@ -696,12 +705,9 @@ L1:     //上次有数据未处理完，则优先处理
 
         }
 
- //       FLASH_APP_TRACE("after parseFlashAddress:m_ulPos=%x, m_wSectionLen=0x%x,m_uSectionAddress=0x%x\n", m_ulPos,m_wSectionLen,m_uSectionAddress);
-
-
         if (m_wSectionLen==1&&m_uSectionAddress==0x3f3fff)
         {
- //           FLASH_APP_LOG(__FILE__, __LINE__, "Send Flag Block!\n");
+            //           FLASH_APP_LOG(__FILE__, __LINE__, "Send Flag Block!\n");
         }
 
 
@@ -774,10 +780,6 @@ L1:     //上次有数据未处理完，则优先处理
         TempMsg.ucFrag = NONFRAG_MSG;
         TempMsg.ucRsRq = RS_MSG;
         TempMsg.ucSourceId = MAC_ID_MON;
-
-//        FLASH_APP_TRACE("Read section: u16DestinationId=%x,ucServiceCode=%x,ucMsgClass=%x,ucSourceId=%x\n",
-//                        TempMsg.u16DestinationId,TempMsg.ucServiceCode,TempMsg.ucMsgClass,TempMsg.ucSourceId);
-//        FLASH_APP_TRACE("Read section: Read over and start a task for sending head\n");
 
         AppMsgXmit(&TempMsg);
     }
@@ -869,8 +871,8 @@ L1:     //上次有数据未处理完，则优先处理
         break;
 
     default:
-
         //升级进度标志复位
+        qDebug()<<"case 0 无效";
         m_u16ProgramPorcess = PROGRESS_IN_RESET;
         ucStateFlag = 1;
         break;

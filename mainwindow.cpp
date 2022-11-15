@@ -242,28 +242,7 @@ void MainWindow::on_mSend_pushButton_clicked()
 ***********************************************************************************/
 void MainWindow::on_mStartUp_pushButton_clicked()
 {
-    if(ui->mDataPath_lineEdit->text() == nullptr)
-    {
-        QMessageBox::critical(this,nullptr,"请选择升级文件！",QMessageBox::Ok);
-        return;
-    }
-
-    char* m_FlashFile = ui->mDataPath_lineEdit->text().toUtf8().data();
-    FILE *fp = fopen(m_FlashFile, "rb");
-    if (!fp)
-    {
-        QMessageBox::information(this,nullptr,"文件加载失败!",QMessageBox::Ok);
-        return;
-    }
-
-    fseek(fp, 0, SEEK_END);
-    long len = ftell(fp);
-
-    fseek(fp, 0, SEEK_SET);
-    fread(cFlashUpdateBuf, len, 1, fp);
-    fclose(fp);
-
-    QMessageBox::information(this,nullptr,"请确认需升级的逆变器模块处于关机状态!",QMessageBox::Ok);
+    flash->HandCommXmitFcb();
     flash->FlashUpdateRoutine();
 }
 
@@ -282,20 +261,14 @@ void MainWindow::on_mOpenFile_pushButton_clicked()
     }
     ui->mDataPath_lineEdit->setText(fileName);
 
-
-    unsigned char buf[0x80000]; DWORD pos; WORD nLength;  UINT nAddress; BYTE sectionbuff[1024*300];
     QFile file(fileName);
     if(file.open(QIODevice::ReadOnly))
     {
-        QDataStream in(&file);
+        QByteArray arr = file.readAll();
+        qDebug()<< arr.size();
+        memcpy(cFlashUpdateBuf,arr,arr.size());
 
-        QString strBuf;
-        while(!in.atEnd())
-        {
-            QByteArray line = file.readLine();
-            qDebug()<< line;
-        }
-        ReadASectionAsciiHex1(buf, pos, nLength, nAddress, sectionbuff);
+        file.close();
     }
 
 }
