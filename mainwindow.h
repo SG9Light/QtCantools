@@ -25,9 +25,6 @@ public:
 
     void StopCanThread();
 
-    void ReadASectionAsciiHex1(BYTE *buf, DWORD& pos, WORD& nLength, UINT& nAddress, BYTE *sectionbuff);
-    BYTE ReadAByteAsciiHex1(BYTE *buf, DWORD& pos);
-
 private slots:
     void on_mOpen_pushButton_clicked();
 

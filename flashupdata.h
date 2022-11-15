@@ -3,8 +3,81 @@
 
 #include <QObject>
 #include "types.h"
+#include "canmessagedeal.h"
 
 //-----------------------------------------------------------------------------
+//状态信息宏定义
+//握手,下发
+#define HAND_COMM_QUERY 0x62
+//握手上传
+#define HAND_OK_RESPOND 0xaa
+
+//解密成功
+#define CHIP_DECODE_SUCCESS 0x00
+#define CHIP_DECODE_FAIL	   10
+
+//API版本匹配问题
+#define API_VESION_OK	0x6c
+#define API_VERSION_FAIL 14
+
+
+
+
+//扇区擦除相关
+//扇区选择
+#define ERASE_SECTOR_ALL 6
+#define ERASE_SECTOR_A 1
+#define ERASE_SECTOR_B 2
+#define ERASE_SECTOR_C 3
+#define ERASE_SECTOR_D 4
+#define ERASE_SECTOR_BCD 5
+
+//扇区擦除返回码定义
+//擦除成功
+#define ERASE_SUCCESFULL 0
+//未指定扇区
+#define ERASE_NO_SPECIFIED_SECTOR 20
+//清0失败
+#define ERASE_PRECONDITION_FAIL 21
+//扇区擦除失败
+#define ERASE_FAIL 22
+//紧致失败
+#define ERASE_COMPACT_FAIL 23
+//预紧致失败
+#define ERASE_PRECOMPACT_FAIL 24
+
+//PROGRAM
+//编程允许
+#define PROGRAM_ENABLE 0x6e
+//因扇区未擦除不允许编程
+#define PROGRAM_DIABLE 0x70
+
+//VERIFY
+//校验成功
+#define VERIFY_OK	0
+//校验失败
+#define VERIFY_FAIL 10
+
+//数据传输
+//BLOCK传输头正确
+#define BLOCK_HEAD_OK	0
+//BLOCK头正确接收并文件传输结束
+#define FILE_TRANS_END 5
+//BLOCK SIZE >1024
+#define BLOCK_SIZE_OVERLOW 10
+//BLOCK ADD OVERLOW
+#define BLOCK_ADD_OVERLOW 20
+//BLOCK head and add are overlow
+#define BLOCK_SEZE_ADD_OVERLOW	30
+
+//one block check sum
+#define CHECK_SUM_SUCCESFUL	0x82
+#define CHECK_SUM_FAIL			0x83
+
+
+//dsp 反馈接收到数据
+#define BLOCK_RECV_DATA_OK 0
+
 //Macro definition
 //sevice code denfine
 //握手
@@ -52,6 +125,28 @@
 //FLASH 编程OK
 #define	PROGRESS_IN_FLASH_PROG_OK	8
 //FLASH 编程校验OK
+
+//目标升级使能与否
+#define TARGET_UPDATE_ENABLE 1
+#define TARGET_UPDATE_DISABLE 0
+
+//升级过程中本次任务处理完成与否
+#define TASK_HANDLED 1
+#define TASK_HANDLE_NON 0
+
+
+//握手状态
+enum CAN_MSG_HANGLE_ERR_ENUM
+{
+    CAN_MSG_HANDLE_OK = 0,
+    CAN_MSG_HANDLE_INVALID_MAC_ID,
+    CAN_MSG_HANDLE_INVALID_BATT_GRP,
+    CAN_MSG_HANDLE_INVALID_OBJ,
+    CAN_MSG_HANDLE_INVALID_MSG_CLASS,
+    CAN_MSG_HANDLE_INVALID_SRVC_COD,
+
+    CAN_MSG_HANDLE_EOL
+};
 
 enum
 {
@@ -118,6 +213,9 @@ public:
     int VerifyXmitFcb(void);
     int VerifyRecvFcb(void);
 
+    UCHAR FlashupdateTaskHandle(UCHAR ucRecvAddr);
+    void FlashupdateTaskReset(void);
+
     void AppMsgRecv(CAN_APDU_T *pCanRecvMsg);
     void AppMsgXmit(CAN_XMIT_QUEUE_MSG_T * pCanXmitMsg);
 
@@ -130,11 +228,19 @@ public:
 
 public:
     CAN_XMIT_QUEUE_MSG_T m_XmitQueueMsg;
+    UCHAR m_ucXmitMsgBuf[8];
+
+    CAN_APDU_T m_XmitMsg;
+    CAN_APDU_T m_RecvMsg;
 
 signals:
 
 private:
     _HOST_MODULE_ITC_T *m_pHostModuleItc;
+
+    //待升级目标变量
+    //=0,表示升级旁路，=1~32升级模块
+    _FLASHUPDATE_TARGET_T m_tFlashupdateTarged[INV_MODULE_MAX_CNT];
 
     uint16_t m_u16SendBlocks;
     bool m_bReadEnd;
@@ -169,6 +275,9 @@ private:
     uint16_t m_u16ProgramPorcess; //升级过程进度标志,防止重入导致状态机错乱
 
     uint16_t m_u32RespondModuleFlag;  //根据后台指定的升级模块看是否有握手应答信号
+
+    WORD m_wBlockLen;   //对应BLOCK的长度
+    UINT16 m_u16ResendCnt;  //BLOCK重发次数
 
 
 };

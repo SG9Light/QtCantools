@@ -107,6 +107,16 @@ typedef struct
     UINT16 u16DestinationId;//byte1: Battery group index; byte0:CAN MAC ID
 }CAN_XMIT_QUEUE_MSG_T;
 
+typedef struct
+{
+    //升级的目标地址
+    UCHAR ucTargeAddr;
+    //此目标地址升级使能=1使能
+    UCHAR ucTargetEnable;
+    //升级过程中本次任务处理完毕=1处理完毕
+    UCHAR ucTaskHandled;
+}_FLASHUPDATE_TARGET_T;
+
 //故障交互数据类型
 typedef enum
 {
@@ -116,62 +126,32 @@ typedef enum
 }_FAULT_DATA_FLAG;
 
 typedef enum
-{
-    //初始无效状态
-    STATUS_FLASH_UPDATE_INVALID = 0,
-    //开始选择节点升级
-    STATUS_FLASH_START,
-    //对指定节点开始升级过程
-    STATUS_SELCET_NODE,
-
-    //等待握手信号状态
-    STATUS_WAITING_HANDS_RESPOND ,
-    //等待芯片解密应答信号
-    STATUS_WAITING_CHIP_DECODE ,
-    //等待API版本确认信息
-    STATUS_WAITING_API_VERSION ,
-    //API ok
-    STATUS_API_OK,
-
-    //擦除中状态
-    STATUS_FLASH_ERASE_GOING,
-    //擦除结束
-    STATUS_FLASH_ERASED,
-    //等待编程允许状态
-    STATUS_PROGRAM_PERMIT_WAITING,
-    //编程允许
-    STATUS_PROGRAM_ENABLE,
-    //传输BLOCK头
-    STATUS_BLOCK_HEAD_WAITING,
-    //传输BLOCK头结束
-    STATUS_BLOCK_HEAD_OK,
-
-    //传输下一个BLOCK
-    STATUS_NEXT_BLOCK_HEAD,
-
-    //等待允许传输BLOCK数据
-    STATUS_BLOCK_DATATRANS_WAITING,
-    //BLOCK数据传输结束
-    STATUS_BLOCK_DATATRANS_END,
-    //等待BLOCK校验和应答
-    STATUS_BLOCK_CHECKSUM_WAITING,
-    //BLOCK校验OK
-    STATUS_BLOCK_CHECKSUM_OK,
-    //编程状态等待
-    STATUS_BLOCK_PROGRAM_WAITING,
-    //BLOCK编程完成
-    STATUS_BLOCK_PROGRAM_COMPLETE,
-    //文件传输完成
-    STATUS_FILE_TRANS_END,
-    //FLASH 校验中
-    STATUS_FLASH_VERIFYING,
-    //FLASH 校验完毕
-    STATUS_FLASH_VERIFY,
-    //FLASH UPDATE 完成
-    STATUS_FLASH_UPDATE_OVER,
-
-    //FLASH调试状态
-    STATUS_FLASH_DEBUG=0x3d
+{   
+    STATUS_FLASH_UPDATE_INVALID = 0,    //初始无效状态
+    STATUS_FLASH_START, //开始选择节点升级
+    STATUS_SELCET_NODE, //对指定节点开始升级过程
+    STATUS_WAITING_HANDS_RESPOND ,  //等待握手信号状态
+    STATUS_WAITING_CHIP_DECODE ,    //等待芯片解密应答信号
+    STATUS_WAITING_API_VERSION ,    //等待API版本确认信息
+    STATUS_API_OK,              //API ok
+    STATUS_FLASH_ERASE_GOING,   //擦除中状态
+    STATUS_FLASH_ERASED,    //擦除结束
+    STATUS_PROGRAM_PERMIT_WAITING,  //等待编程允许状态
+    STATUS_PROGRAM_ENABLE,      //编程允许
+    STATUS_BLOCK_HEAD_WAITING,  //传输BLOCK头
+    STATUS_BLOCK_HEAD_OK,       //传输BLOCK头结束
+    STATUS_NEXT_BLOCK_HEAD,         //传输下一个BLOCK
+    STATUS_BLOCK_DATATRANS_WAITING, //等待允许传输BLOCK数据
+    STATUS_BLOCK_DATATRANS_END,     //BLOCK数据传输结束
+    STATUS_BLOCK_CHECKSUM_WAITING,  //等待BLOCK校验和应答
+    STATUS_BLOCK_CHECKSUM_OK,       //BLOCK校验OK
+    STATUS_BLOCK_PROGRAM_WAITING,   //编程状态等待
+    STATUS_BLOCK_PROGRAM_COMPLETE,  //BLOCK编程完成
+    STATUS_FILE_TRANS_END,      //文件传输完成
+    STATUS_FLASH_VERIFYING,     //FLASH 校验中
+    STATUS_FLASH_VERIFY,        //FLASH 校验完毕
+    STATUS_FLASH_UPDATE_OVER,   //FLASH UPDATE 完成
+    STATUS_FLASH_DEBUG=0x3d     //FLASH调试状态
 
 }_FLASHUPDATE_STATUS;
 

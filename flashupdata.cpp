@@ -109,35 +109,143 @@ FlashUpData::FlashUpData(QObject *parent) : QObject(parent)
 
 /************************************************************************************
 函数名称:	HandCommXmitFcb
-功能描述: 握手信号
+功能描述: 握手信号下发
 参数：
 ***********************************************************************************/
 int FlashUpData::HandCommXmitFcb()
 {
-    m_pHostModuleItc->u16FlashupdateStatus = STATUS_PROGRAM_ENABLE;
-    return  0;
 
+    UCHAR ucErrCode = CAN_MSG_HANDLE_OK;
+
+    m_XmitMsg.pData = m_ucXmitMsgBuf;
+
+    //升级与协议层交互的信息
+    m_XmitMsg.ucRsRq = RS_MSG;
+    //传送2字节
+    m_XmitMsg.u16Length = 2;
+
+    //将指针m_XmitMsg.pData也指向将要发送的数据
+    *((UINT16 *)(m_XmitMsg.pData + 0)) = HAND_COMM_QUERY;
+
+    //启动一个超时计数器,超时后重发,可重发3次,
+    //如果重发三次失败则反馈给后台,告知升级失败
+    //TBD
+
+    //初始化数据
+    m_ulPos = 0;
+    m_uBlockAddress = 0;
+    m_uSectionAddress = 0;
+    m_wBlockLen = 0;
+
+    m_u16ResendCnt = BLOCK_RESEND_CNT;
+
+    //超时计数器处理
+
+
+    //等待握手响应
+    m_pHostModuleItc->u16FlashupdateStatus = STATUS_WAITING_HANDS_RESPOND;
+
+    return ucErrCode;
 }
 
 /************************************************************************************
 函数名称:	HandCommXmitFcb
-功能描述: 握手信号
+功能描述: 握手信号 0xaa表示握手成功
 参数：
 ***********************************************************************************/
 int FlashUpData::HandCommRecvFcb()
 {
-    return  0;
+
+    UINT16 u16RetrunStatus;
+    CAN_XMIT_QUEUE_MSG_T TempMsg;
+
+    u16RetrunStatus = *(UINT16 *)(m_RecvMsg.pData);
+
+    //如果进度不在等待握手应答则放弃此次接收到的握手信号
+    if (PROGRESS_IN_START != m_u16ProgramPorcess)
+    {
+        return 1;
+    }
+
+    //握手成功
+    if (HAND_OK_RESPOND == u16RetrunStatus)
+    {
+        //置相应模块回应标志
+        if (m_pHostModuleItc->sFlashUpdateFlag == 1)  //REC
+        {
+            if (m_RecvMsg.ucSourceId>=0x02 && m_RecvMsg.ucSourceId<=0x04)
+            {
+                m_pHostModuleItc->m_FlashRsModIdx |= (1<<(m_RecvMsg.ucSourceId-0x02));
+            }
+        }
+        else if (m_pHostModuleItc->sFlashUpdateFlag==2) //INV
+        {
+            if (m_RecvMsg.ucSourceId>=0x05 && m_RecvMsg.ucSourceId<=0x1E)
+            {
+                m_pHostModuleItc->m_FlashRsModIdx |= (1<<(m_RecvMsg.ucSourceId-0x05));
+            }
+        }
+        else
+        {
+            //donothing
+        }
+
+        //通过握手超时来获取可升级模块
+        if (0 /*== FlashupdateTaskHandle(m_RecvMsg.ucSourceId)*/)
+        {
+            //升级进度标志,防止收到芯片解密回馈信息之前，进度还未更新到位
+            m_u16ProgramPorcess = PROGRESS_IN_HAND_OK;
+
+            //等待解密信息反馈,启动等待延时TBD
+            m_pHostModuleItc->u16FlashupdateStatus = STATUS_WAITING_CHIP_DECODE;
+
+            //下发获取芯片解密信息
+            TempMsg.u16DestinationId = 0x3f;
+            TempMsg.ucServiceCode = CHIP_DECODE_SRVCODE;
+            TempMsg.ucMsgClass = 0;
+            TempMsg.ucFrag = NONFRAG_MSG;
+            TempMsg.ucRsRq = RS_MSG;
+            TempMsg.ucSourceId = MAC_ID_MON;
+            AppMsgXmit(&TempMsg);
+        }
+
+        //wait othger node repond
+        else
+        {
+            ;//do nothing
+        }
+
+    }
+
+    return u16RetrunStatus;
 
 }
 
 /************************************************************************************
 函数名称:	ChipDecodeXmitFcb
-功能描述: 信号解密
+功能描述: 信号解密下发
 参数：
 ***********************************************************************************/
 int FlashUpData::ChipDecodeXmitFcb()
 {
-    return  0;
+    UCHAR ucErrCode = CAN_MSG_HANDLE_OK;
+
+    m_XmitMsg.pData = m_ucXmitMsgBuf;
+
+    //升级与协议层交互的信息
+    m_XmitMsg.ucRsRq = RS_MSG;
+    //传送2字节
+    m_XmitMsg.u16Length = 0;
+
+    //等待解密信息反馈,启动等待延时TBD
+    //先赋状态值，再发送，防止已经收到回应后再赋值
+    m_pHostModuleItc->u16FlashupdateStatus = STATUS_WAITING_CHIP_DECODE;
+
+    //启动一个超时计数器,超时后重发,可重发3次,
+    //如果重发三次失败则反馈给后台,告知升级失败
+    //TBD
+
+    return ucErrCode;
 
 }
 
@@ -148,7 +256,63 @@ int FlashUpData::ChipDecodeXmitFcb()
 ***********************************************************************************/
 int FlashUpData::ChipDecodeRecvFcb()
 {
-    return  0;
+
+    UINT16 u16RetrunStatus;
+    CAN_XMIT_QUEUE_MSG_T TempMsg;
+
+    u16RetrunStatus = *(UINT16 *)(m_RecvMsg.pData);;
+
+    //如果收到的反馈擦除应答信息不对退出,如何处理TBD
+/*	if (m_u16UpdaingNodeAdd != m_RecvMsg.ucSourceId)
+    {
+        return 1;
+    }
+*/
+
+    //如果进度不在等待解密应答则放弃此次接收到的应答信号
+    if (PROGRESS_IN_HAND_OK != m_u16ProgramPorcess)
+    {
+        return 1;
+    }
+
+    //芯片解密OK
+    if (CHIP_DECODE_SUCCESS == u16RetrunStatus)
+    {
+        if (0 == FlashupdateTaskHandle(m_RecvMsg.ucSourceId))
+        {
+            //关芯片解密等待定时器
+
+            //升级进度标志
+            m_u16ProgramPorcess = PROGRESS_IN_DECODE_OK;
+
+            //下发获取API版本信息
+            TempMsg.u16DestinationId = 0x3f;
+            TempMsg.ucServiceCode = API_VERSION_SRVCODE;
+            TempMsg.ucMsgClass = 0;
+            TempMsg.ucFrag = NONFRAG_MSG;
+            TempMsg.ucRsRq = RS_MSG;
+            TempMsg.ucSourceId = MAC_ID_MON;
+
+            AppMsgXmit(&TempMsg);
+
+            //reset task
+            FlashupdateTaskReset();
+        }
+
+        //wait othger node repond
+        else
+        {
+            ;//do nothing
+        }
+    }
+
+    //擦除失败,置反馈状态字给后台TBD
+    else
+    {
+        ;//
+    }
+
+    return 1;
 
 }
 
@@ -327,6 +491,68 @@ int FlashUpData::VerifyRecvFcb()
     return  0;
 
 }
+
+/************************************************************************************
+函数名称:	FlashupdateTaskHandle
+功能描述:FLASH UPDATE 某项任务是否都已处理完毕 =0表示处理完成,=1还有节点待处理
+参数：
+***********************************************************************************/
+UCHAR FlashUpData::FlashupdateTaskHandle(UCHAR ucRecvAddr)
+{
+    UCHAR ucRet;
+    ucRet = 1;
+
+    if (m_pHostModuleItc->sFlashUpdateFlag==1)
+    {
+        if (ucRecvAddr>=0x02 && ucRecvAddr<=0x04)//rec
+        {
+            m_pHostModuleItc->m_FlashRsModIdx |= (1<<(ucRecvAddr-0x02));
+        }
+    }
+    else if (m_pHostModuleItc->sFlashUpdateFlag==2) //inv
+    {
+        if (ucRecvAddr>=0x05 && ucRecvAddr<=0x1E)
+        {
+            m_pHostModuleItc->m_FlashRsModIdx |= (1<<(ucRecvAddr-0x05));
+        }
+    }
+/*	else if (m_pHostModuleItc->sFlashUpdateFlag==FLASHUPDATE_OBJECT_CHG)
+    {
+        if (ucRecvAddr==0x05)
+        {
+            m_pHostModuleItc->m_FlashRsModIdx |= 1;
+        }
+    }*/
+
+    if (m_pHostModuleItc->m_FlashRsModIdx==m_pHostModuleItc->m_FlashModIdx)
+    {
+        m_pHostModuleItc->m_FlashRsModIdx = 0;
+        ucRet = 0;
+    }
+
+    return ucRet;
+
+}
+
+/************************************************************************************
+函数名称:	FlashupdateTaskReset
+功能描述: FLASH UPDATE 某项任务启动
+参数：
+***********************************************************************************/
+void FlashUpData::FlashupdateTaskReset()
+{
+    UCHAR i;
+
+    for (i=0; i<INV_MODULE_MAX_CNT; i++)
+    {
+        if (TARGET_UPDATE_ENABLE == m_tFlashupdateTarged[i].ucTargetEnable)
+        {
+             m_tFlashupdateTarged[i].ucTaskHandled = TASK_HANDLE_NON;
+        }
+
+    }
+}
+
 
 /************************************************************************************
 函数名称:	AppMsgXmit

@@ -22,10 +22,6 @@ public:
     void MsgRecv(CAN_APDU_T *pCanRecvMsg);
     void MsgXmit(IN CAN_APDU_T *pMsg);
 
-public:
-    CAN_APDU_T m_XmitMsg;
-    CAN_APDU_T m_RecvMsg;
-
 protected:
     void run() override;
 
@@ -33,6 +29,8 @@ signals:
     void my_signal(QString str);//信号函数
 
 private:
+    CAN_APDU_T m_XmitMsg;
+    CAN_APDU_T m_RecvMsg;
 
 };
 

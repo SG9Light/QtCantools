@@ -47,121 +47,6 @@ void MainWindow::StopCanThread()
     ui->mCanFlag_label->setStyleSheet("color:red;");
 }
 
-void MainWindow::ReadASectionAsciiHex1(BYTE *buf, DWORD &pos, WORD &nLength, UINT &nAddress, BYTE *sectionbuff)
-{
-
-    nLength = 0;
-    nAddress = 0;
-
-    //越过文件起始标志
-    if (buf[pos]==0x02)
-    {
-        pos++;
-    }
-
-    while (buf[pos] == 0x0D || buf[pos] == 0x0A || buf[pos] == ' ')
-    {
-        pos++;
-    }
-
-    //文件结束
-    if (buf[pos] == 0x03)
-    {
-        qDebug() << "ReadASectionAsciiHex:read end!\n";
-        return;
-    }
-
-    printf("Read Address!\r\n");
-
-    nAddress = 0;
-
-    //读取到地址
-    if (buf[pos]==0x24 && buf[pos+1]==0x41)
-    {
-        qDebug() << "enter  Read Address!\r\n";
-        pos += 2;
-        BYTE *pAdd = (BYTE*)&nAddress;
-        printf("Adrress:%02X, %02X, %02X\r\n", buf[pos], buf[pos+1], buf[pos+2]);
-        while (buf[pos]!=',')
-        {
-            nAddress = nAddress<<8;
-            pAdd[0] = ReadAByteAsciiHex1(buf, pos);
-            printf("%02X ", pAdd[0]);
-        }
-        pos++;
-        qDebug() << "leave  Read Address!\r\n";
-    }
-
-    int nByteLen = 0;
-    //读到下一个地址或文件结束时停止
-    while (buf[pos]!=0x24 && buf[pos]!=0x03)
-    {
-        sectionbuff[nByteLen+1] = ReadAByteAsciiHex1(buf, pos);	//高字节在前
-        sectionbuff[nByteLen] = ReadAByteAsciiHex1(buf, pos);
-        nByteLen += 2;
-    }
-
-    if (nByteLen%2)
-    {
-        qDebug() << "nByteLen is ODD!\n";
-    }
-
-    nLength = nByteLen/2;
-
-    qDebug() << "Read A Section!\r\n";
-}
-
-BYTE MainWindow::ReadAByteAsciiHex1(BYTE *buf, DWORD &pos)
-{
-    BYTE nData;
-    int ucInput1;
-    int ucInput2;
-
-    while (buf[pos] == 0x0D || buf[pos] == 0x0A || buf[pos] == ' ')
-    {
-        pos++;
-    }
-
-    ucInput1 = *(buf+pos);
-    ucInput2 = *(buf+pos+1);
-    if (ucInput1>='a')
-    {
-        ucInput1 = ucInput1-'a'+10;
-    }
-    else if (ucInput1 > 0x39)
-    {
-        ucInput1 = ucInput1 - 0x37;					/*'A' - 'F'*/
-    }
-    else
-    {
-        ucInput1 = ucInput1 - 0x30;					/*'0' - '9'*/
-    }
-
-    if (ucInput2>='a')
-    {
-        ucInput2 = ucInput2-'a'+10;
-    }
-    else if (ucInput2 > 0x39)
-    {
-        ucInput2 = ucInput2 - 0x37;					/*'A' - 'F'*/
-    }
-    else
-    {
-        ucInput2 = ucInput2 - 0x30;					/*'0' - '9'*/
-    }
-
-    nData = (ucInput1 << 4) + ucInput2;
-
-    pos +=2;
-
-    while (buf[pos] == 0x0D || buf[pos] == 0x0A || buf[pos] == ' ')
-    {
-        pos++;
-    }
-
-    return nData;
-}
-
 /************************************************************************************
 函数名称:	on_mOpen_pushButton_clicked
 功能描述: 打开CAN槽函数
@@ -225,14 +110,7 @@ void MainWindow::on_mClose_pushButton_clicked()
 ***********************************************************************************/
 void MainWindow::on_mSend_pushButton_clicked()
 {
-    Candeal->m_XmitMsg.ucDestinationId = 0x3f;
-    Candeal->m_XmitMsg.ucServiceCode = 0x21;
-    Candeal->m_XmitMsg.ucMsgClass = 2;
-    Candeal->m_XmitMsg.ucFrag = 0;
-    Candeal->m_XmitMsg.ucRsRq = 1;
-    Candeal->m_XmitMsg.ucSourceId = 1;
 
-    Candeal->MsgXmit(&Candeal->m_XmitMsg);
 }
 
 /************************************************************************************
@@ -242,8 +120,7 @@ void MainWindow::on_mSend_pushButton_clicked()
 ***********************************************************************************/
 void MainWindow::on_mStartUp_pushButton_clicked()
 {
-    flash->HandCommXmitFcb();
-    flash->FlashUpdateRoutine();
+
 }
 
 /************************************************************************************
