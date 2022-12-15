@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include "main.h"
-#include "canmessagedeal.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,8 +29,5 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-
-    CanMessageDeal *Candeal = new CanMessageDeal;
-
 };
 #endif // MAINWINDOW_H

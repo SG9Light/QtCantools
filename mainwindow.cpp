@@ -14,9 +14,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->mCanFlag_label->setText("USBCAN-II Pro : 关闭");
     ui->mCanFlag_label->setStyleSheet("color:red;");
-    connect(Candeal, &CanMessageDeal::my_signal, this,[=](QString str){
-        ui->mDisp_textBrowser->append(str);
-    });
 }
 
 /************************************************************************************
@@ -28,7 +25,6 @@ MainWindow::~MainWindow()
 {
     StopCanThread();
 
-    delete Candeal;
     delete ui;
 }
 
@@ -39,7 +35,6 @@ MainWindow::~MainWindow()
 ***********************************************************************************/
 void MainWindow::StopCanThread()
 {
-    Candeal->CloseCanBox();
     ui->mCanFlag_label->setText("USBCAN-II Pro : 关闭");
     ui->mCanFlag_label->setStyleSheet("color:red;");
 }
@@ -53,7 +48,6 @@ void MainWindow::on_mOpen_pushButton_clicked()
 {
     ui->mCanFlag_label->setText("USBCAN-II Pro : 打开");
     ui->mCanFlag_label->setStyleSheet("color:green;");
-    Candeal->start();
 }
 
 /************************************************************************************
@@ -95,8 +89,6 @@ void MainWindow::on_mOpenFile_pushButton_clicked()
     if(file.open(QIODevice::ReadOnly))
     {
         QByteArray arr = file.readAll();
-        qDebug()<< arr.size();
-        memcpy(cFlashUpdateBuf,arr,arr.size());
 
         file.close();
     }

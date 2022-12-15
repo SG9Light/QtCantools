@@ -110,6 +110,29 @@ void DialogCanBox::RxThread()
 ***********************************************************************************/
 void DialogCanBox::TransmitMsg()
 {
+    QString transmit_str;
+    CAN_OBJ vciMsg;
+
+    DWORD flag = Transmit(USBCAN2,DeviceInd0,CANInd0,&vciMsg,1);
+
+    if(!flag)
+    {
+        transmit_str = "发送失败:";
+    }
+    else
+    {
+        transmit_str = "发送完成:";
+    }
+    mRecCnt++;
+    transmit_str.append(QString::number(mRecCnt,10));
+    transmit_str.append("  帧ID:");
+    transmit_str.append(QString::number(vciMsg.ID,16));
+    transmit_str.append("    数据：");
+    for (int i=0; i<vciMsg.DataLen; i++)
+    {
+        transmit_str.append(QString::number(vciMsg.Data[i],16));
+        transmit_str.append(" ");
+    }
 
 }
 
