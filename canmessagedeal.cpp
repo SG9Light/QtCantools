@@ -12,65 +12,13 @@ CanMessageDeal::CanMessageDeal()
 }
 
 /************************************************************************************
-函数名称:	CloseCanBox
-功能描述: 设备关闭函数
-参数：
-***********************************************************************************/
-void CanMessageDeal::CloseCanBox()
-{
-    if(IsOpenFlag == CanOpenOk)
-    {
-        IsOpenFlag = CanBoxClose;
-        CloseDevice(USBCAN2,DeviceInd0);
-    }
-}
-
-/************************************************************************************
-函数名称:	OpenCanBox
-功能描述: 设备打开函数
-参数：
-***********************************************************************************/
-void CanMessageDeal::OpenCanBox()
-{
-    if(!OpenDevice(USBCAN2,DeviceInd0, CANInd0))
-    {
-        IsOpenFlag = CanDeviceFail;
-        return;
-    }
-
-    INIT_CONFIG canconfig[1];
-    canconfig->Mode = 0;    //正常模式
-    canconfig->Filter = 0;  //滤波不使能
-    canconfig->AccCode = 0;
-    canconfig->AccMask = 0xFFFFFFFF;  //掩码
-    canconfig->Timing0 = 0x03;
-    canconfig->Timing1 = 0x1c;  //125k
-    if(!InitCAN(USBCAN2, DeviceInd0, CANInd0, canconfig))
-    {
-        IsOpenFlag = CanInitFail;
-        CloseDevice(USBCAN2,DeviceInd0);
-        return;
-    }
-
-    if(!StartCAN(USBCAN2,DeviceInd0,CANInd0))
-    {
-        IsOpenFlag = CanStar1Fail;
-        CloseDevice(USBCAN2,DeviceInd0);
-        return;
-    }
-
-    IsOpenFlag = CanOpenOk;
-
-}
-
-/************************************************************************************
 函数名称:	ReceiveMsg
 功能描述: CAN消息接收函数
 参数：
 ***********************************************************************************/
 void CanMessageDeal::ReceiveMsg()
 {
-    CAN_OBJ pReceive[100];
+    CAN_OBJ pReceive[200];
     ERR_INFO err;
     unsigned long res = 10;
 
@@ -96,25 +44,6 @@ void CanMessageDeal::ReceiveMsg()
             receive_str.append(" ");
         }
         emit my_signal(receive_str);//子线程处理完毕//触发自定义的信号
-
-        CAN_APDU_T apdu;
-        VCI_To_APDU(&apdu, &(pReceive[i]));
-
-//        if (apdu.ucMsgClass==0
-//            && apdu.ucSourceId!=0	//修正监控在线时容易蹦溃的问题
-//            )
-//        {
-//            dlg->m_CanFlashObj.Msg_Recv(&apdu);
-//        }
-//        else if (apdu.ucMsgClass==2)
-//        {
-//            dlg->m_CanCtrlObj.Msg_Recv(&apdu);
-//        }
-
-//        if (apdu.ucMsgClass!=0)
-//        {
-//            gUpsSysInfo.Msg_Recv(&apdu);
-//        }
     }
     Sleep(1);
 }

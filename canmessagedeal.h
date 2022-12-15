@@ -6,7 +6,6 @@
 
 #include "lib/ECanVci.h"
 #include "types.h"
-#include "flashupdata.h"
 
 
 class CanMessageDeal : public QThread
@@ -15,8 +14,6 @@ class CanMessageDeal : public QThread
 public:
     explicit CanMessageDeal();
 
-    void CloseCanBox();
-    void OpenCanBox();
     void ReceiveMsg();
 
     void MsgRecv(CAN_APDU_T *pCanRecvMsg);

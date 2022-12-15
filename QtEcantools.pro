@@ -17,19 +17,19 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     canmessagedeal.cpp \
-    flashupdata.cpp \
+    dialogcanbox.cpp \
     main.cpp \
-    mainwindow.cpp \
-    types.cpp
+    mainwindow.cpp
 
 HEADERS += \
     canmessagedeal.h \
-    flashupdata.h \
+    dialogcanbox.h \
     lib/ECanVci.h \
-    mainwindow.h \
-    types.h
+    main.h \
+    mainwindow.h
 
 FORMS += \
+    dialogcanbox.ui \
     mainwindow.ui
 
 # Default rules for deployment.

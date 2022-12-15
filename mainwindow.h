@@ -2,14 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QMessageBox>
-#include <QFile>
-#include <QFileDialog>
-#include <QTextStream>
-#include <QDebug>
-
+#include "main.h"
 #include "canmessagedeal.h"
-#include "flashupdata.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -32,15 +26,12 @@ private slots:
 
     void on_mSend_pushButton_clicked();
 
-    void on_mStartUp_pushButton_clicked();
-
     void on_mOpenFile_pushButton_clicked();
 
 private:
     Ui::MainWindow *ui;
 
     CanMessageDeal *Candeal = new CanMessageDeal;
-    FlashUpData *flash = new FlashUpData;
 
 };
 #endif // MAINWINDOW_H

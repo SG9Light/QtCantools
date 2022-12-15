@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "stdio.h"
 
 /************************************************************************************
 函数名称:	MainWindow
@@ -41,8 +40,6 @@ MainWindow::~MainWindow()
 void MainWindow::StopCanThread()
 {
     Candeal->CloseCanBox();
-    Candeal->wait();
-    Candeal->quit();
     ui->mCanFlag_label->setText("USBCAN-II Pro : 关闭");
     ui->mCanFlag_label->setStyleSheet("color:red;");
 }
@@ -54,40 +51,6 @@ void MainWindow::StopCanThread()
 ***********************************************************************************/
 void MainWindow::on_mOpen_pushButton_clicked()
 {
-    if(IsOpenFlag == CanOpenOk)
-    {
-        QMessageBox::warning(this,nullptr,"CAN已打开",QMessageBox::Ok);
-        return;
-    }
-
-    Candeal->OpenCanBox();
-
-    switch (IsOpenFlag)
-    {
-    case CanBoxClose:
-        QMessageBox::critical(this,nullptr,"CAN未打开",QMessageBox::Ok);
-        break;
-    case CanDeviceFail :
-        QMessageBox::critical(this,nullptr,"驱动打开失败",QMessageBox::Ok);
-        break;
-    case CanInitFail   :
-        QMessageBox::critical(this,nullptr,"CAN初始化失败",QMessageBox::Ok);
-        break;
-    case CanStar1Fail  :
-        QMessageBox::critical(this,nullptr,"通道1启动失败",QMessageBox::Ok);
-        break;
-    case CanStar2Fail  :
-        QMessageBox::critical(this,nullptr,"通道2启动失败",QMessageBox::Ok);
-        break;
-    default:
-        break;
-
-    }
-    if(IsOpenFlag != CanOpenOk)
-    {
-        return;
-    }
-
     ui->mCanFlag_label->setText("USBCAN-II Pro : 打开");
     ui->mCanFlag_label->setStyleSheet("color:green;");
     Candeal->start();
@@ -109,16 +72,6 @@ void MainWindow::on_mClose_pushButton_clicked()
 参数：
 ***********************************************************************************/
 void MainWindow::on_mSend_pushButton_clicked()
-{
-
-}
-
-/************************************************************************************
-函数名称:	on_mStartUp_pushButton_clicked
-功能描述: 开始升级flash槽函数
-参数：
-***********************************************************************************/
-void MainWindow::on_mStartUp_pushButton_clicked()
 {
 
 }
