@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "main.h"
+#include "canbox.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -16,8 +17,6 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void StopCanThread();
-
 private slots:
     void on_mOpen_pushButton_clicked();
 
@@ -29,5 +28,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    CanBox *objCanBox = new CanBox;
+
 };
 #endif // MAINWINDOW_H

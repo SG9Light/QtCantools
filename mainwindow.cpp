@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->mCanFlag_label->setText("USBCAN-II Pro : 关闭");
     ui->mCanFlag_label->setStyleSheet("color:red;");
+
+    connect(objCanBox, &CanBox::e_Disp, ui->mDisp_textBrowser, &QTextBrowser::append);
 }
 
 /************************************************************************************
@@ -23,20 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
 ***********************************************************************************/
 MainWindow::~MainWindow()
 {
-    StopCanThread();
-
+    objCanBox->deleteLater();
     delete ui;
-}
-
-/************************************************************************************
-函数名称:	StopCanThread
-功能描述: 关闭CAN盒
-参数：
-***********************************************************************************/
-void MainWindow::StopCanThread()
-{
-    ui->mCanFlag_label->setText("USBCAN-II Pro : 关闭");
-    ui->mCanFlag_label->setStyleSheet("color:red;");
 }
 
 /************************************************************************************
@@ -46,8 +36,33 @@ void MainWindow::StopCanThread()
 ***********************************************************************************/
 void MainWindow::on_mOpen_pushButton_clicked()
 {
-    ui->mCanFlag_label->setText("USBCAN-II Pro : 打开");
-    ui->mCanFlag_label->setStyleSheet("color:green;");
+    int dwr = objCanBox->OpenCanBox();
+    switch (dwr) {
+    case 1:
+        QMessageBox::information(this,nullptr,"设备打开成功",QMessageBox::Ok);
+        break;
+
+    case 2:
+        QMessageBox::critical(this,nullptr,"驱动打开失败",QMessageBox::Ok);
+         break;
+
+    case 3:
+        QMessageBox::critical(this,nullptr,"CAN初始化失败",QMessageBox::Ok);
+         break;
+
+    case 4:
+         QMessageBox::critical(this,nullptr,"通道1启动失败",QMessageBox::Ok);
+        break;
+    default:
+
+        break;
+    }
+    if(dwr)
+    {
+        ui->mCanFlag_label->setText("USBCAN-II Pro : 打开");
+        ui->mCanFlag_label->setStyleSheet("color:green;");
+    }
+
 }
 
 /************************************************************************************
@@ -57,7 +72,9 @@ void MainWindow::on_mOpen_pushButton_clicked()
 ***********************************************************************************/
 void MainWindow::on_mClose_pushButton_clicked()
 {
-    StopCanThread();
+    objCanBox->CloseCanBox();
+    ui->mCanFlag_label->setText("USBCAN-II Pro : 关闭");
+    ui->mCanFlag_label->setStyleSheet("color:red;");
 }
 
 /************************************************************************************
@@ -67,7 +84,7 @@ void MainWindow::on_mClose_pushButton_clicked()
 ***********************************************************************************/
 void MainWindow::on_mSend_pushButton_clicked()
 {
-
+    objCanBox->TransmitMsg();
 }
 
 /************************************************************************************

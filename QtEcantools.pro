@@ -16,18 +16,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    dialogcanbox.cpp \
+    canbox.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
-    dialogcanbox.h \
+    canbox.h \
     lib/ECanVci.h \
     main.h \
     mainwindow.h
 
 FORMS += \
-    dialogcanbox.ui \
     mainwindow.ui
 
 # Default rules for deployment.

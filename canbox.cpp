@@ -1,22 +1,21 @@
-#include "dialogcanbox.h"
-#include "ui_dialogcanbox.h"
+#include "canbox.h"
 
-//全局变量定义
-long  mRecCnt = 0;
-
-DialogCanBox::DialogCanBox(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::DialogCanBox)
+CanBox::CanBox(QObject *parent) : QObject(parent)
 {
-    ui->setupUi(this);
-
     this->moveToThread(taskCan);
     taskCan->start();
+
+    mCloseCan = true;
+    mRecCnt = 0;
+
+    connect(this,&CanBox::e_Close, this, &CanBox::RxThread);
 }
 
-DialogCanBox::~DialogCanBox()
+CanBox::~CanBox()
 {
-    delete ui;
+    taskCan->quit();
+    taskCan->wait();
+    taskCan->deleteLater();
 }
 
 /************************************************************************************
@@ -24,12 +23,11 @@ DialogCanBox::~DialogCanBox()
 功能描述: 打开CANBOX
 参数：
 ***********************************************************************************/
-void DialogCanBox::OpenCanBox()
+int CanBox::OpenCanBox()
 {
     if(!OpenDevice(USBCAN2,DeviceInd0, CANInd0))
     {
-        QMessageBox::critical(this,nullptr,"驱动打开失败",QMessageBox::Ok);
-        return;
+        return 2;
     }
 
     INIT_CONFIG canconfig[1];
@@ -41,17 +39,19 @@ void DialogCanBox::OpenCanBox()
     canconfig->Timing1 = 0x1c;  //125k
     if(!InitCAN(USBCAN2, DeviceInd0, CANInd0, canconfig))
     {
-        QMessageBox::critical(this,nullptr,"CAN初始化失败",QMessageBox::Ok);
         CloseDevice(USBCAN2,DeviceInd0);
-        return;
+        return 3;
     }
 
     if(!StartCAN(USBCAN2,DeviceInd0,CANInd0))
     {
-        QMessageBox::critical(this,nullptr,"通道1启动失败",QMessageBox::Ok);
         CloseDevice(USBCAN2,DeviceInd0);
-        return;
+        return 4;
     }
+
+    mCloseCan = false;
+    emit e_Close();
+    return 1;
 
 }
 
@@ -60,11 +60,10 @@ void DialogCanBox::OpenCanBox()
 功能描述: 关闭CANBOX
 参数：
 ***********************************************************************************/
-void DialogCanBox::CloseCanBox()
+void CanBox::CloseCanBox()
 {
-    taskCan->quit();
-    taskCan->wait();
     CloseDevice(USBCAN2,DeviceInd0);
+    mCloseCan = true;
 }
 
 /************************************************************************************
@@ -72,35 +71,44 @@ void DialogCanBox::CloseCanBox()
 功能描述: CANBOX接收主线程
 参数：
 ***********************************************************************************/
-void DialogCanBox::RxThread()
+void CanBox::RxThread()
 {
     CAN_OBJ pReceive[200];
     ERR_INFO err;
     unsigned long res = 10;
 
-    res = Receive(USBCAN2,DeviceInd0,CANInd0,pReceive,50,10);
-    for(unsigned long i = 0;i < res;i++)
+    while (1)
     {
-        if(res==4294967295)
+        if(mCloseCan)
         {
-            if(ReadErrInfo(USBCAN2,DeviceInd0,CANInd0,&err)!=STATUS_ERR)
+            return;
+        }
+
+        res = Receive(USBCAN2,DeviceInd0,CANInd0,pReceive,50,10);
+        for(unsigned long i = 0; i < res;i++)
+        {
+            if(res==4294967295)
             {
-                qDebug()<<"读取数据失败!"<<"错误码为："<<QString::number(err.ErrCode,16);
+                if(ReadErrInfo(USBCAN2,DeviceInd0,CANInd0,&err)!=STATUS_ERR)
+                {
+                    qDebug()<<"读取数据失败!"<<"错误码为："<<QString::number(err.ErrCode,16);
+                }
             }
+            QString receive_str = "接收:";
+            mRecCnt++;
+            receive_str.append(QString::number(mRecCnt,10));
+            receive_str.append("  帧ID:");
+            receive_str.append(QString::number(pReceive[i].ID,16));
+            receive_str.append("    数据：");
+            for (int a=0;a<pReceive[i].DataLen;a++)
+            {
+                receive_str.append(QString::number(pReceive[i].Data[a],16));
+                receive_str.append(" ");
+            }
+            emit e_Disp(receive_str);
         }
-        QString receive_str = "接收:";
-        mRecCnt++;
-        receive_str.append(QString::number(mRecCnt,10));
-        receive_str.append("  帧ID:");
-        receive_str.append(QString::number(pReceive[i].ID,16));
-        receive_str.append("    数据：");
-        for (int a=0;a<pReceive[i].DataLen;a++)
-        {
-            receive_str.append(QString::number(pReceive[i].Data[a],16));
-            receive_str.append(" ");
-        }
+
     }
-    Sleep(1);
 }
 
 /************************************************************************************
@@ -108,21 +116,20 @@ void DialogCanBox::RxThread()
 功能描述: CANBOX数据发送函数
 参数：
 ***********************************************************************************/
-void DialogCanBox::TransmitMsg()
+void CanBox::TransmitMsg()
 {
     QString transmit_str;
     CAN_OBJ vciMsg;
+    vciMsg.ID = 1;
+    vciMsg.DataLen = 2;
+    vciMsg.Data[0] = 0;
+    vciMsg.Data[1] = 1;
+    vciMsg.Data[2] = 2;
+    vciMsg.Data[3] = 3;
 
-    DWORD flag = Transmit(USBCAN2,DeviceInd0,CANInd0,&vciMsg,1);
-
-    if(!flag)
-    {
-        transmit_str = "发送失败:";
-    }
-    else
-    {
-        transmit_str = "发送完成:";
-    }
+    if(mCloseCan)return;
+    Transmit(USBCAN2,DeviceInd0,CANInd0,&vciMsg,1);
+    transmit_str = "发送完成:";
     mRecCnt++;
     transmit_str.append(QString::number(mRecCnt,10));
     transmit_str.append("  帧ID:");
@@ -133,9 +140,7 @@ void DialogCanBox::TransmitMsg()
         transmit_str.append(QString::number(vciMsg.Data[i],16));
         transmit_str.append(" ");
     }
+    emit e_Disp(transmit_str);
 
 }
-
-
-
 
