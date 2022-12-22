@@ -4,6 +4,8 @@
 #include "main.h"
 #include "lib/ECanVci.h"
 
+class MainWindow;
+
 class CanBox : public QObject
 {
     Q_OBJECT

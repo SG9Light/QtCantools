@@ -19,7 +19,8 @@ SOURCES += \
     CanFlashupdate.cpp \
     canbox.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    upsinfo.cpp
 
 HEADERS += \
     CanFlashupdate.h \
@@ -27,7 +28,8 @@ HEADERS += \
     canflashconst.h \
     lib/ECanVci.h \
     main.h \
-    mainwindow.h
+    mainwindow.h \
+    upsinfo.h
 
 FORMS += \
     mainwindow.ui

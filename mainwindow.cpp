@@ -19,11 +19,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(objCanBox, &CanBox::e_Disp, ui->mDisp_textBrowser, &QTextBrowser::append);
     connect(this, &MainWindow::e_filePath, objCanFlash, &CanFlashupdate::GetUpdataFile);
+
     connect(ui->mStartUp_pushButton, &QPushButton::clicked, objCanFlash, &CanFlashupdate::FlashupdateThread);
     connect(objCanFlash, &CanFlashupdate::e_MsgToSerial, this, [=](CAN_OBJ pVci){
         objCanBox->TransmitMsg(pVci);
     });
+    connect(objUpsInfo, &upsInfo::e_UpsPoll, this, [=](CAN_OBJ pVci){
+        objCanBox->TransmitMsg(pVci);
+    });
 
+    //接收函数
     connect(objCanBox, &CanBox::e_BoxRx, this, [=](CAN_OBJ pVci){
         objCanFlash->Msg_RxSerial(pVci);
     });
@@ -36,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mBlocknum_progressBar->setValue(0);
     connect(objCanFlash, &CanFlashupdate::e_BlockProgressSet,ui->mBlocknum_progressBar,&QProgressBar::setMaximum);
     connect(objCanFlash, &CanFlashupdate::e_BlockProgressDisp,ui->mBlocknum_progressBar,&QProgressBar::setValue);
+
 }
 
 /************************************************************************************

@@ -5,6 +5,7 @@
 #include "main.h"
 #include "canbox.h"
 #include "CanFlashupdate.h"
+#include "upsinfo.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -35,6 +36,9 @@ private:
     Ui::MainWindow *ui;
     CanBox *objCanBox = new CanBox;
     CanFlashupdate *objCanFlash = new CanFlashupdate;
+    upsInfo *objUpsInfo = new upsInfo;
+
+
 
 };
 #endif // MAINWINDOW_H

@@ -8,5 +8,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QMetaType>
+#include <QTimer>
+#include <QTime>
 
 #endif // MAIN_H

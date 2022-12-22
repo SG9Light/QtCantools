@@ -88,7 +88,7 @@ void CanBox::RxThread()
         for(unsigned long i = 0; i < res;i++)
         {
             emit e_BoxRx(pReceive[i]);
-            if(res==0xFFFFFFFF)
+            if(res==0xffffffff)
             {
                 if(ReadErrInfo(USBCAN2,DeviceInd0,CANInd0,&err)!=STATUS_ERR)
                 {
