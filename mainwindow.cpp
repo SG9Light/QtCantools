@@ -12,10 +12,30 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    qRegisterMetaType<CAN_OBJ>("CAN_OBJ");//注册结构
+
     ui->mCanFlag_label->setText("USBCAN-II Pro : 关闭");
     ui->mCanFlag_label->setStyleSheet("color:red;");
 
     connect(objCanBox, &CanBox::e_Disp, ui->mDisp_textBrowser, &QTextBrowser::append);
+    connect(this, &MainWindow::e_filePath, objCanFlash, &CanFlashupdate::GetUpdataFile);
+    connect(ui->mStartUp_pushButton, &QPushButton::clicked, objCanFlash, &CanFlashupdate::FlashupdateThread);
+    connect(objCanFlash, &CanFlashupdate::e_MsgToSerial, this, [=](CAN_OBJ pVci){
+        objCanBox->TransmitMsg(pVci);
+    });
+
+    connect(objCanBox, &CanBox::e_BoxRx, this, [=](CAN_OBJ pVci){
+        objCanFlash->Msg_RxSerial(pVci);
+    });
+
+    //整体进度显示
+    ui->mOverall_progressBar->setValue(0);
+    connect(objCanFlash, &CanFlashupdate::e_UpProgressSet,ui->mOverall_progressBar, &QProgressBar::setMaximum);
+    connect(objCanFlash, &CanFlashupdate::e_UpProgressDisp,ui->mOverall_progressBar, &QProgressBar::setValue);
+    //BLOCK进度显示
+    ui->mBlocknum_progressBar->setValue(0);
+    connect(objCanFlash, &CanFlashupdate::e_BlockProgressSet,ui->mBlocknum_progressBar,&QProgressBar::setMaximum);
+    connect(objCanFlash, &CanFlashupdate::e_BlockProgressDisp,ui->mBlocknum_progressBar,&QProgressBar::setValue);
 }
 
 /************************************************************************************
@@ -84,7 +104,17 @@ void MainWindow::on_mClose_pushButton_clicked()
 ***********************************************************************************/
 void MainWindow::on_mSend_pushButton_clicked()
 {
-    objCanBox->TransmitMsg();
+    CAN_OBJ mVci;
+
+    mVci.RemoteFlag = 0;
+    mVci.ExternFlag = 0;
+    mVci.ID = 1;
+    mVci.DataLen = 2;
+    mVci.Data[0] = 0x55;
+    mVci.Data[1] = 0xff;
+
+
+    objCanBox->TransmitMsg(mVci);
 }
 
 /************************************************************************************
@@ -100,14 +130,8 @@ void MainWindow::on_mOpenFile_pushButton_clicked()
         QMessageBox::warning(this,nullptr,"文件路径为空",QMessageBox::Ok);
         return;
     }
+
+    emit e_filePath(fileName);
     ui->mDataPath_lineEdit->setText(fileName);
-
-    QFile file(fileName);
-    if(file.open(QIODevice::ReadOnly))
-    {
-        QByteArray arr = file.readAll();
-
-        file.close();
-    }
 
 }

@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "main.h"
 #include "canbox.h"
+#include "CanFlashupdate.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -26,9 +27,14 @@ private slots:
 
     void on_mOpenFile_pushButton_clicked();
 
+signals:
+    void e_filePath(QString path);
+
+
 private:
     Ui::MainWindow *ui;
     CanBox *objCanBox = new CanBox;
+    CanFlashupdate *objCanFlash = new CanFlashupdate;
 
 };
 #endif // MAINWINDOW_H

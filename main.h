@@ -7,5 +7,6 @@
 #include <QMessageBox>
 #include <QFile>
 #include <QFileDialog>
+#include <QMetaType>
 
 #endif // MAIN_H

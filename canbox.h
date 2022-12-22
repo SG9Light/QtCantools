@@ -14,11 +14,12 @@ public:
     int OpenCanBox(void);
     void CloseCanBox(void);
     void RxThread(void);
-    void TransmitMsg(void);
+    void TransmitMsg(CAN_OBJ pVci);
 
 signals:
-    void e_Close(void);
+    void e_Open(void);
     void e_Disp(QString str);
+    void e_BoxRx(CAN_OBJ pVci);
 
 private:
     QThread *taskCan = new QThread;

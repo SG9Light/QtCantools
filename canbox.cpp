@@ -8,7 +8,7 @@ CanBox::CanBox(QObject *parent) : QObject(parent)
     mCloseCan = true;
     mRecCnt = 0;
 
-    connect(this,&CanBox::e_Close, this, &CanBox::RxThread);
+    connect(this,&CanBox::e_Open, this, &CanBox::RxThread);
 }
 
 CanBox::~CanBox()
@@ -50,7 +50,7 @@ int CanBox::OpenCanBox()
     }
 
     mCloseCan = false;
-    emit e_Close();
+    emit e_Open();
     return 1;
 
 }
@@ -87,7 +87,8 @@ void CanBox::RxThread()
         res = Receive(USBCAN2,DeviceInd0,CANInd0,pReceive,50,10);
         for(unsigned long i = 0; i < res;i++)
         {
-            if(res==4294967295)
+            emit e_BoxRx(pReceive[i]);
+            if(res==0xFFFFFFFF)
             {
                 if(ReadErrInfo(USBCAN2,DeviceInd0,CANInd0,&err)!=STATUS_ERR)
                 {
@@ -116,28 +117,21 @@ void CanBox::RxThread()
 功能描述: CANBOX数据发送函数
 参数：
 ***********************************************************************************/
-void CanBox::TransmitMsg()
+void CanBox::TransmitMsg(CAN_OBJ pVci)
 {
     QString transmit_str;
-    CAN_OBJ vciMsg;
-    vciMsg.ID = 1;
-    vciMsg.DataLen = 2;
-    vciMsg.Data[0] = 0;
-    vciMsg.Data[1] = 1;
-    vciMsg.Data[2] = 2;
-    vciMsg.Data[3] = 3;
 
     if(mCloseCan)return;
-    Transmit(USBCAN2,DeviceInd0,CANInd0,&vciMsg,1);
+    Transmit(USBCAN2,DeviceInd0,CANInd0,&pVci,1);
     transmit_str = "发送完成:";
     mRecCnt++;
     transmit_str.append(QString::number(mRecCnt,10));
     transmit_str.append("  帧ID:");
-    transmit_str.append(QString::number(vciMsg.ID,16));
+    transmit_str.append(QString::number(pVci.ID,16));
     transmit_str.append("    数据：");
-    for (int i=0; i<vciMsg.DataLen; i++)
+    for (int i=0; i<pVci.DataLen; i++)
     {
-        transmit_str.append(QString::number(vciMsg.Data[i],16));
+        transmit_str.append(QString::number(pVci.Data[i],16));
         transmit_str.append(" ");
     }
     emit e_Disp(transmit_str);
